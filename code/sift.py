@@ -86,12 +86,11 @@ def transform(img, img_kps, dst_kps, H, W):
                     dstPoints = dst_kps,
                     method    = cv2.USAC_ACCURATE,
                     ransacReprojThreshold = 3)
-    print(T)
-    dest = np.zeros_like(img2, shape=(H,W,3))
+    dest = np.zeros_like(img, shape=(H,W,3))
 
     # TODO: apply transform by `cv2.warpPerspective`
     transformed = cv2.warpPerspective(
-                    src   = img2,
+                    src   = img,
                     M     = T,
                     dsize = (W, H),
                     dst   = dest,
