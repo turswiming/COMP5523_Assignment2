@@ -8,30 +8,51 @@ def keypoint_match(img1, img2, max_n_match=100, draw=True):
     img2 = np.uint8(img2)
 
     # TODO: convert to grayscale by `cv2.cvtColor`
-    img1_gray = ...
-    img2_gray = ...
+    img1_gray = cv2.cvtColor(img1, cv2.COLOR_RGB2GRAY)
+    img2_gray = cv2.cvtColor(img2, cv2.COLOR_RGB2GRAY)
 
 
     # TODO: detect keypoints and generate descriptor by `sift.detectAndCompute`
     sift = cv2.SIFT_create()
-    keypoints1, descriptors1 = ...
-    keypoints2, descriptors2 = ...
+    keypoints1, descriptors1 = sift.detectAndCompute(img1_gray, mask=None)
+    keypoints2, descriptors2 = sift.detectAndCompute(img2_gray, mask=None)
 
 
     # draw keypoints
     if draw:
         # TODO: draw keypoints on image1 and image2 by `cv2.drawKeypoints`
+        img1_keypoints = cv2.drawKeypoints(
+        image     = img1,
+        keypoints = keypoints1,
+        outImage  = None,
+        flags     = cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+
+        write_and_show('results/1.3_img1_keypoints.jpg', img1_keypoints)
+        
+        img2_keypoints = cv2.drawKeypoints(
+        image     = img2,
+        keypoints = keypoints2,
+        outImage  = None,
+        flags     = cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+
+        write_and_show('results/1.3_img2_keypoints.jpg', img2_keypoints)
         pass
 
 
     # TODO: Knn match and Lowe's ratio test
     matcher = cv2.FlannBasedMatcher_create()
-    ...
-
-
+    best_2 = matcher.knnMatch(
+            queryDescriptors = descriptors1,
+            trainDescriptors = descriptors2,
+            k                = 2)
+    ratio = 0.7
+    match = []
+    for m, n in best_2:
+        if m.distance < ratio * n.distance:
+            match.append(m)
     # TODO: select best `max_n_match` matches
-    ...
-
+    match = sorted(match, key = lambda x:x.distance)
+    match = match[:max_n_match]
 
     return keypoints1, keypoints2, match
 
@@ -41,8 +62,14 @@ def draw_match(img1, keypoints1, img2, keypoints2, match, savename):
     img2 = np.uint8(img2)
 
     # TODO: draw matches by `cv2.drawMatches`
-    match_draw = ...
-
+    match_draw = cv2.drawMatches(
+        img1        = img1,
+        keypoints1  = keypoints1,
+        img2        = img2,
+        keypoints2  = keypoints2,
+        matches1to2 = match,
+        outImg      = None,
+        flags       = cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
     write_and_show(savename, match_draw)
 
@@ -54,11 +81,21 @@ def transform(img, img_kps, dst_kps, H, W):
     W: width of output image
     '''
     # TODO: get transform matrix by `cv2.findHomography`
-    T, status = ...
-
+    T, status = cv2.findHomography(
+                    srcPoints = img_kps,
+                    dstPoints = dst_kps,
+                    method    = cv2.USAC_ACCURATE,
+                    ransacReprojThreshold = 3)
+    print(T)
+    dest = np.zeros_like(img2, shape=(H,W,3))
 
     # TODO: apply transform by `cv2.warpPerspective`
-    transformed = ...
+    transformed = cv2.warpPerspective(
+                    src   = img2,
+                    M     = T,
+                    dsize = (W, H),
+                    dst   = dest,
+                    borderMode = cv2.BORDER_TRANSPARENT)
 
 
     return transformed
@@ -90,9 +127,15 @@ if __name__ == '__main__':
     # write_and_show('results/new_img1.jpg', new_img2)
 
     # TODO: average `new_img1` and `new_img2`
-    cnt = ...
+    direct_mean = new_img1/2 + new_img2/2
+    imshow('direct_mean.jpg', direct_mean)
+    cnt = np.zeros([H,W,1]) + 1e-10     # add a tiny value to avoid ZeroDivisionError
+    cnt += (new_img2 != 0).any(2, keepdims=True) # any: or
+    cnt += (new_img1 != 0).any(2, keepdims=True)
 
-    stack = ...
+    new_img1 = np.float32(new_img1)
+    new_img2 = np.float32(new_img2)
+    stack = (new_img2+new_img1)/cnt
 
     write_and_show('results/1.7_stack.jpg', stack)
 
