@@ -11,7 +11,7 @@ n_image = len(images)
 # TODO: init panorama
 # 2.1
 h, w = images[0].shape[:2]
-H, W = h, w*3
+H, W = h, w*4
 panorama = np.zeros([H,W,3])
 h_start = 0
 w_start = W-w

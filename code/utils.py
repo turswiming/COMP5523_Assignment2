@@ -48,7 +48,7 @@ def read_video_frames(video_name):
 def write_frames_to_video(video_name, frames, fps):
     # fps stands for 'frame per second'
     H, W, _ = frames[0].shape
-    out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc('a','v','c','1'), fps, (W,H))
+    out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'mp4v'), fps, (W,H))
     for frm in tqdm(frames, f'write to "{video_name}" with fps={fps}'):
         frm = np.uint8(frm)
         out.write(frm)
