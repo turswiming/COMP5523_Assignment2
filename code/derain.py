@@ -16,24 +16,34 @@ def orb_keypoint_match(img1, img2, max_n_match=100, draw=True):
     img2 = np.uint8(img2)
 
     # TODO: convert to grayscale by `cv2.cvtColor`
-    img1_gray = ...
-    img2_gray = ...
+    img1_gray = cv2.cvtColor(img1, cv2.COLOR_RGB2GRAY)
+    img2_gray = cv2.cvtColor(img2, cv2.COLOR_RGB2GRAY)
 
 
     # TODO: detect keypoints and generate descriptor by by 'orb.detectAndCompute', modify parameters for cv2.ORB_create for more stable results.
-    orb = cv2.ORB_create(...)
-    keypoints1, descriptors1 = ...
-    keypoints2, descriptors2 = ...
+    orb = cv2.ORB_create()
+    keypoints1, descriptors1 = orb.detectAndCompute(img1_gray, mask=None)
+    keypoints2, descriptors2 = orb.detectAndCompute(img2_gray, mask=None)
 
     # TODO: convert descriptors1, descriptors2 to np.float32
-
+    descriptors1 = np.float32(descriptors1)
+    descriptors2 = np.float32(descriptors2)
 
     # TODO: Knn match and Lowe's ratio test
     matcher = cv2.FlannBasedMatcher_create()
-    ...
+    best_2 = matcher.knnMatch(
+            queryDescriptors = descriptors1,
+            trainDescriptors = descriptors2,
+            k                = 2)
 
     # TODO: select best `max_n_match` matches
-    ...
+    ratio = 0.7
+    match = []
+    for m, n in best_2:
+        if m.distance < ratio * n.distance:
+            match.append(m)
+    match = sorted(match, key = lambda x:x.distance)
+    match = match[:max_n_match]
 
     return keypoints1, keypoints2, match
 
@@ -50,11 +60,14 @@ if __name__ == '__main__':
     H, W = reference.shape[:2]
     for img in tqdm(images[::2], 'processing'):
         ## TODO find keypoints and matches between each input img and the reference image
-        ref_kps, img_kps, match = orb_keypoint_match(...)
+        ref_kps, img_kps, match = orb_keypoint_match(reference, img, max_n_match=1000, draw=False)
+        ref_kps = np.array([ref_kps[m.queryIdx].pt for m in match])
+        img_kps = np.array([img_kps[m.trainIdx].pt for m in match])
 
 
         # TODO: align all frames to reference frame (images[0])
-        trans = ...
+        trans = transform(img, img_kps, ref_kps, H, W)
+
 
 
 
